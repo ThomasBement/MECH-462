@@ -1,0 +1,248 @@
+# -*- coding: mbcs -*-
+from part import *
+from material import *
+from section import *
+from assembly import *
+from step import *
+from interaction import *
+from load import *
+from mesh import *
+from optimization import *
+from job import *
+from sketch import *
+from visualization import *
+from connectorBehavior import *
+mdb.models.changeKey(fromName='Model-1', toName='Baseline')
+mdb.models['Baseline'].ConstrainedSketch(name='__profile__', sheetSize=10.0)
+mdb.models['Baseline'].sketches['__profile__'].Line(point1=(0.0, 0.0), point2=(
+    0.15, 0.0))
+mdb.models['Baseline'].sketches['__profile__'].HorizontalConstraint(
+    addUndoState=False, entity=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[2])
+mdb.models['Baseline'].sketches['__profile__'].Line(point1=(0.15, 0.0), point2=
+    (0.15, 0.15))
+mdb.models['Baseline'].sketches['__profile__'].VerticalConstraint(addUndoState=
+    False, entity=mdb.models['Baseline'].sketches['__profile__'].geometry[3])
+mdb.models['Baseline'].sketches['__profile__'].PerpendicularConstraint(
+    addUndoState=False, entity1=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[2], entity2=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[3])
+mdb.models['Baseline'].sketches['__profile__'].Line(point1=(0.15, 0.15), 
+    point2=(0.0, 0.15))
+mdb.models['Baseline'].sketches['__profile__'].HorizontalConstraint(
+    addUndoState=False, entity=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[4])
+mdb.models['Baseline'].sketches['__profile__'].PerpendicularConstraint(
+    addUndoState=False, entity1=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[3], entity2=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[4])
+mdb.models['Baseline'].sketches['__profile__'].Line(point1=(0.0, 0.15), point2=
+    (0.0, 0.0))
+mdb.models['Baseline'].sketches['__profile__'].VerticalConstraint(addUndoState=
+    False, entity=mdb.models['Baseline'].sketches['__profile__'].geometry[5])
+mdb.models['Baseline'].sketches['__profile__'].PerpendicularConstraint(
+    addUndoState=False, entity1=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[4], entity2=
+    mdb.models['Baseline'].sketches['__profile__'].geometry[5])
+mdb.models['Baseline'].Part(dimensionality=TWO_D_PLANAR, name='Sample', type=
+    DEFORMABLE_BODY)
+mdb.models['Baseline'].parts['Sample'].BaseShell(sketch=
+    mdb.models['Baseline'].sketches['__profile__'])
+del mdb.models['Baseline'].sketches['__profile__']
+mdb.models['Baseline'].Material(name='Sample Material')
+mdb.models['Baseline'].materials['Sample Material'].Elastic(table=((
+    70000000000.0, 0.3), ))
+mdb.models['Baseline'].SurfaceSection(name='Section-1', useDensity=OFF)
+del mdb.models['Baseline'].sections['Section-1']
+mdb.models['Baseline'].HomogeneousSolidSection(material='Sample Material', 
+    name='Sample', thickness=None)
+mdb.models['Baseline'].parts['Sample'].Set(faces=
+    mdb.models['Baseline'].parts['Sample'].faces.getSequenceFromMask(('[#1 ]', 
+    ), ), name='Set-1')
+mdb.models['Baseline'].parts['Sample'].SectionAssignment(offset=0.0, 
+    offsetField='', offsetType=MIDDLE_SURFACE, region=
+    mdb.models['Baseline'].parts['Sample'].sets['Set-1'], sectionName='Sample', 
+    thicknessAssignment=FROM_GEOMETRY)
+mdb.models['Baseline'].rootAssembly.DatumCsysByDefault(CARTESIAN)
+mdb.models['Baseline'].rootAssembly.Instance(dependent=ON, name='Sample-1', 
+    part=mdb.models['Baseline'].parts['Sample'])
+mdb.models['Baseline'].StaticStep(name='Static_001', previous='Initial')
+mdb.models['Baseline'].HistoryOutputRequest(createStepName='Static_001', name=
+    'H-Output-2', rebar=EXCLUDE, region=
+    mdb.models['Baseline'].rootAssembly.allInstances['Sample-1'].sets['Set-1'], 
+    sectionPoints=DEFAULT, variables=('S11', 'S22', 'S33', 'S12', 'S13', 'S23', 
+    'SP', 'TRESC', 'PRESS', 'INV3', 'MISES', 'TSHR13', 'TSHR23', 'CTSHR13', 
+    'CTSHR23', 'ALPHA11', 'ALPHA22', 'ALPHA33', 'ALPHA12', 'ALPHA13', 
+    'ALPHA23', 'ALPHAP', 'TRIAX', 'LODE', 'VS11', 'VS22', 'VS33', 'VS12', 
+    'VS13', 'VS23', 'PS11', 'PS22', 'PS33', 'PS12', 'PS13', 'PS23', 'CS11', 
+    'ALPHA1', 'ALPHA2', 'ALPHA3', 'ALPHA4', 'ALPHA5', 'ALPHA6', 'ALPHA7', 
+    'ALPHA8', 'ALPHA9', 'ALPHA10', 'SSAVG1', 'SSAVG2', 'SSAVG3', 'SSAVG4', 
+    'SSAVG5', 'SSAVG6', 'SEQUT', 'YIELDPOT', 'E11', 'E22', 'E33', 'E12', 'E13', 
+    'E23', 'EP', 'VE11', 'VE22', 'VE33', 'VE12', 'VE13', 'VE23', 'PE11', 
+    'PE22', 'PE33', 'PE12', 'PE13', 'PE23', 'PEP', 'VEEQ', 'PEEQ', 'PEEQT', 
+    'PEMAG', 'PEQC1', 'PEQC2', 'PEQC3', 'PEQC4', 'EE11', 'EE22', 'EE33', 
+    'EE12', 'EE13', 'EE23', 'EEP', 'IE11', 'IE22', 'IE33', 'IE12', 'IE13', 
+    'IE23', 'IEP', 'THE11', 'THE22', 'THE33', 'THE12', 'THE13', 'THE23', 
+    'THEP', 'NE11', 'NE22', 'NE33', 'NE12', 'NE13', 'NE23', 'NEP', 'LE11', 
+    'LE22', 'LE33', 'LE12', 'LE13', 'LE23', 'LEP', 'TE11', 'TE22', 'TE33', 
+    'TE12', 'TE13', 'TE23', 'TEEQ', 'TEVOL', 'EEQUT', 'ER11', 'ER22', 'ER33', 
+    'ER12', 'ER13', 'ER23', 'ERP', 'SE1', 'SE2', 'SE3', 'SK1', 'SK2', 'SK3', 
+    'BICURV', 'SPE1', 'SPE2', 'SPE3', 'SPE4', 'SEPE1', 'SEPE2', 'SEPE3', 
+    'SEPE4', 'SEE1', 'SKE1', 'SKE2', 'SKE3', 'SEP1', 'SKP1', 'SKP2', 'SKP3', 
+    'SALPHA1', 'SALPHA2', 'SALPHA3', 'SALPHA4', 'U1', 'U2', 'U3', 'UR1', 'UR2', 
+    'UR3', 'UT', 'UR', 'V1', 'V2', 'V3', 'VR1', 'VR2', 'VR3', 'VT', 'VR', 
+    'WARP', 'RBANG', 'RBROT', 'UMAG', 'IRA1', 'IRA2', 'IRA3', 'IRAR1', 'IRAR2', 
+    'IRAR3', 'RF1', 'RF2', 'RF3', 'RM1', 'RM2', 'RM3', 'RT', 'RM', 'RWM', 
+    'CF1', 'CF2', 'CF3', 'CM1', 'CM2', 'CM3', 'CW', 'SF1', 'SF2', 'SF3', 'SM1', 
+    'SM2', 'SM3', 'BIMOM', 'SQEQ', 'TF1', 'TF2', 'TF3', 'TM1', 'TM2', 'TM3', 
+    'VF1', 'VF2', 'VF3', 'VM1', 'VM2', 'VM3', 'RFMAG', 'ESF1', 'NFORC', 
+    'NFORCSO', 'RBFOR', 'IRF1', 'IRF2', 'IRF3', 'IRM1', 'IRM2', 'IRM3'))
+mdb.models['Baseline'].fieldOutputRequests['F-Output-1'].setValues(variables=(
+    'S', 'PE', 'PEEQ', 'PEMAG', 'LE', 'U', 'RF', 'CF', 'CSTRESS', 'CDISP', 
+    'ENER', 'ELEN', 'ELEDEN'))
+mdb.models['Baseline'].rootAssembly.Set(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#2 ]', ), ), name='Set-1')
+mdb.models['Baseline'].DisplacementBC(amplitude=UNSET, createStepName=
+    'Static_001', distributionType=UNIFORM, fieldName='', fixed=OFF, localCsys=
+    None, name='Fixed_Base', region=
+    mdb.models['Baseline'].rootAssembly.sets['Set-1'], u1=0.0, u2=0.0, ur3=
+    UNSET)
+mdb.models['Baseline'].rootAssembly.Set(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#1 ]', ), ), name='Set-2')
+mdb.models['Baseline'].DisplacementBC(amplitude=UNSET, createStepName=
+    'Static_001', distributionType=UNIFORM, fieldName='', fixed=OFF, localCsys=
+    None, name='Symmetry', region=
+    mdb.models['Baseline'].rootAssembly.sets['Set-2'], u1=0.0, u2=UNSET, ur3=
+    UNSET)
+mdb.models['Baseline'].rootAssembly.makeIndependent(instances=(
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'], ))
+mdb.models['Baseline'].rootAssembly.PartitionEdgeByParam(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#8 ]', ), ), parameter=0.875689248243968)
+del mdb.models['Baseline'].rootAssembly.features['Sample-1']
+mdb.models['Baseline'].rootAssembly.Instance(dependent=OFF, name='Sample-1', 
+    part=mdb.models['Baseline'].parts['Sample'])
+del mdb.models['Baseline'].steps['Static_001']
+mdb.models['Baseline'].StaticStep(name='Static_001', previous='Initial')
+mdb.models['Baseline'].parts['Sample'].Set(edges=
+    mdb.models['Baseline'].parts['Sample'].edges.getSequenceFromMask(('[#8 ]', 
+    ), ), name='Top')
+mdb.models['Baseline'].parts['Sample'].Set(edges=
+    mdb.models['Baseline'].parts['Sample'].edges.getSequenceFromMask(('[#1 ]', 
+    ), ), name='Symmetry')
+mdb.models['Baseline'].parts['Sample'].Set(edges=
+    mdb.models['Baseline'].parts['Sample'].edges.getSequenceFromMask(('[#2 ]', 
+    ), ), name='Base')
+mdb.models['Baseline'].rootAssembly.regenerate()
+mdb.models['Baseline'].HistoryOutputRequest(createStepName='Static_001', name=
+    'H-Output-2', rebar=EXCLUDE, region=
+    mdb.models['Baseline'].rootAssembly.allInstances['Sample-1'].sets['Top'], 
+    sectionPoints=DEFAULT, variables=('S11', 'S22', 'S33', 'S12', 'S13', 'S23', 
+    'SP', 'TRESC', 'PRESS', 'INV3', 'MISES', 'TSHR13', 'TSHR23', 'CTSHR13', 
+    'CTSHR23', 'ALPHA11', 'ALPHA22', 'ALPHA33', 'ALPHA12', 'ALPHA13', 
+    'ALPHA23', 'ALPHAP', 'TRIAX', 'LODE', 'VS11', 'VS22', 'VS33', 'VS12', 
+    'VS13', 'VS23', 'PS11', 'PS22', 'PS33', 'PS12', 'PS13', 'PS23', 'CS11', 
+    'ALPHA1', 'ALPHA2', 'ALPHA3', 'ALPHA4', 'ALPHA5', 'ALPHA6', 'ALPHA7', 
+    'ALPHA8', 'ALPHA9', 'ALPHA10', 'SSAVG1', 'SSAVG2', 'SSAVG3', 'SSAVG4', 
+    'SSAVG5', 'SSAVG6', 'SEQUT', 'YIELDPOT', 'E11', 'E22', 'E33', 'E12', 'E13', 
+    'E23', 'EP', 'VE11', 'VE22', 'VE33', 'VE12', 'VE13', 'VE23', 'PE11', 
+    'PE22', 'PE33', 'PE12', 'PE13', 'PE23', 'PEP', 'VEEQ', 'PEEQ', 'PEEQT', 
+    'PEMAG', 'PEQC1', 'PEQC2', 'PEQC3', 'PEQC4', 'EE11', 'EE22', 'EE33', 
+    'EE12', 'EE13', 'EE23', 'EEP', 'IE11', 'IE22', 'IE33', 'IE12', 'IE13', 
+    'IE23', 'IEP', 'THE11', 'THE22', 'THE33', 'THE12', 'THE13', 'THE23', 
+    'THEP', 'NE11', 'NE22', 'NE33', 'NE12', 'NE13', 'NE23', 'NEP', 'LE11', 
+    'LE22', 'LE33', 'LE12', 'LE13', 'LE23', 'LEP', 'TE11', 'TE22', 'TE33', 
+    'TE12', 'TE13', 'TE23', 'TEEQ', 'TEVOL', 'EEQUT', 'ER11', 'ER22', 'ER33', 
+    'ER12', 'ER13', 'ER23', 'ERP', 'SE1', 'SE2', 'SE3', 'SK1', 'SK2', 'SK3', 
+    'BICURV', 'SPE1', 'SPE2', 'SPE3', 'SPE4', 'SEPE1', 'SEPE2', 'SEPE3', 
+    'SEPE4', 'SEE1', 'SKE1', 'SKE2', 'SKE3', 'SEP1', 'SKP1', 'SKP2', 'SKP3', 
+    'SALPHA1', 'SALPHA2', 'SALPHA3', 'SALPHA4', 'U1', 'U2', 'U3', 'UR1', 'UR2', 
+    'UR3', 'UT', 'UR', 'V1', 'V2', 'V3', 'VR1', 'VR2', 'VR3', 'VT', 'VR', 
+    'WARP', 'RBANG', 'RBROT', 'UMAG', 'IRA1', 'IRA2', 'IRA3', 'IRAR1', 'IRAR2', 
+    'IRAR3', 'RF1', 'RF2', 'RF3', 'RM1', 'RM2', 'RM3', 'RT', 'RM', 'RWM', 
+    'CF1', 'CF2', 'CF3', 'CM1', 'CM2', 'CM3', 'CW', 'SF1', 'SF2', 'SF3', 'SM1', 
+    'SM2', 'SM3', 'BIMOM', 'SQEQ', 'TF1', 'TF2', 'TF3', 'TM1', 'TM2', 'TM3', 
+    'VF1', 'VF2', 'VF3', 'VM1', 'VM2', 'VM3', 'RFMAG', 'ESF1', 'NFORC', 
+    'NFORCSO', 'RBFOR', 'IRF1', 'IRF2', 'IRF3', 'IRM1', 'IRM2', 'IRM3'))
+mdb.models['Baseline'].rootAssembly.PartitionEdgeByParam(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#8 ]', ), ), parameter=0.95)
+mdb.models['Baseline'].rootAssembly.Set(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#2 ]', ), ), name='Set-3')
+mdb.models['Baseline'].DisplacementBC(amplitude=UNSET, createStepName=
+    'Static_001', distributionType=UNIFORM, fieldName='', fixed=OFF, localCsys=
+    None, name='Base', region=mdb.models['Baseline'].rootAssembly.sets['Set-3']
+    , u1=0.0, u2=0.0, ur3=UNSET)
+mdb.models['Baseline'].rootAssembly.Set(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#1 ]', ), ), name='Set-4')
+mdb.models['Baseline'].DisplacementBC(amplitude=UNSET, createStepName=
+    'Static_001', distributionType=UNIFORM, fieldName='', fixed=OFF, localCsys=
+    None, name='Symmetry', region=
+    mdb.models['Baseline'].rootAssembly.sets['Set-4'], u1=0.0, u2=UNSET, ur3=
+    UNSET)
+mdb.models['Baseline'].rootAssembly.Set(edges=
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].edges.getSequenceFromMask(
+    ('[#10 ]', ), ), name='Set-5')
+mdb.models['Baseline'].DisplacementBC(amplitude=UNSET, createStepName=
+    'Static_001', distributionType=UNIFORM, fieldName='', fixed=OFF, localCsys=
+    None, name='No_Slip', region=
+    mdb.models['Baseline'].rootAssembly.sets['Set-5'], u1=0.0, u2=UNSET, ur3=
+    UNSET)
+mdb.models['Baseline'].boundaryConditions.changeKey(fromName='No_Slip', toName=
+    'Punch')
+mdb.models['Baseline'].boundaryConditions['Punch'].setValues(u2=-1e-05)
+mdb.models['Baseline'].rootAssembly.seedPartInstance(deviationFactor=0.1, 
+    minSizeFactor=0.1, regions=(
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'], ), size=0.0075)
+mdb.models['Baseline'].rootAssembly.seedPartInstance(deviationFactor=0.1, 
+    minSizeFactor=0.1, regions=(
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'], ), size=0.0005)
+mdb.models['Baseline'].rootAssembly.seedPartInstance(deviationFactor=0.1, 
+    minSizeFactor=0.1, regions=(
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'], ), size=0.001)
+mdb.models['Baseline'].rootAssembly.setElementType(elemTypes=(ElemType(
+    elemCode=CPE4R, elemLibrary=STANDARD, secondOrderAccuracy=OFF, 
+    hourglassControl=DEFAULT, distortionControl=DEFAULT), ElemType(
+    elemCode=CPE3, elemLibrary=STANDARD)), regions=(
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'].faces.getSequenceFromMask(
+    ('[#1 ]', ), ), ))
+mdb.models['Baseline'].rootAssembly.generateMesh(regions=(
+    mdb.models['Baseline'].rootAssembly.instances['Sample-1'], ))
+mdb.Job(atTime=None, contactPrint=OFF, description='', echoPrint=OFF, 
+    explicitPrecision=SINGLE, getMemoryFromAnalysis=True, historyPrint=OFF, 
+    memory=90, memoryUnits=PERCENTAGE, model='Baseline', modelPrint=OFF, 
+    multiprocessingMode=DEFAULT, name='Job-1', nodalOutputPrecision=SINGLE, 
+    numCpus=1, numGPUs=0, numThreadsPerMpiProcess=1, queue=None, resultsFormat=
+    ODB, scratch='', type=ANALYSIS, userSubroutine='', waitHours=0, 
+    waitMinutes=0)
+mdb.jobs['Job-1'].submit(consistencyChecking=OFF)
+# Save by bemen on 2022_11_27-12.44.07; build 2022 2021_09_15-10.57.30 176069
+# Save by bemen on 2022_11_27-12.44.09; build 2022 2021_09_15-10.57.30 176069
+# Save by bemen on 2022_11_27-14.19.48; build 2022 2021_09_15-10.57.30 176069
+from part import *
+from material import *
+from section import *
+from assembly import *
+from step import *
+from interaction import *
+from load import *
+from mesh import *
+from optimization import *
+from job import *
+from sketch import *
+from visualization import *
+from connectorBehavior import *
+mdb.models['Baseline'].boundaryConditions['Punch'].setValues(u1=UNSET)
+mdb.Job(atTime=None, contactPrint=OFF, description='', echoPrint=OFF, 
+    explicitPrecision=SINGLE, getMemoryFromAnalysis=True, historyPrint=OFF, 
+    memory=90, memoryUnits=PERCENTAGE, model='Baseline', modelPrint=OFF, 
+    multiprocessingMode=DEFAULT, name='Job-2_No_Fric', nodalOutputPrecision=
+    SINGLE, numCpus=1, numGPUs=0, numThreadsPerMpiProcess=1, queue=None, 
+    resultsFormat=ODB, scratch='', type=ANALYSIS, userSubroutine='', waitHours=
+    0, waitMinutes=0)
+mdb.jobs['Job-2_No_Fric'].submit(consistencyChecking=OFF)
+# Save by bemen on 2022_11_28-07.18.53; build 2022 2021_09_15-10.57.30 176069
