@@ -6,6 +6,30 @@ import matplotlib.pyplot as plt
 """
 FUNCTIONS
 """
+def get_cmap(n, name='plasma'):
+    return plt.cm.get_cmap(name, n)
+
+def disp_bow(r, a, F, E, V, d2=3.4E-6):    
+    G = E/(2*(1+V))
+    ans = np.zeros_like(r)
+    for i in range(len(r)):
+        if (r[i] > a):
+            ans[i] = (-1*F*(1-V))/(np.pi*G)*np.log(r[i]+np.sqrt(r[i]**2-a**2))+d2
+        elif (r[i] <= a):
+            ans[i] = (-1*F*(1-V))/(np.pi*G)*np.log(a)+d2
+    return ans
+
+def pres_bow(r, a, F):
+    return F/(np.pi*np.sqrt(a**2-r**2))
+
+def valid_bow(r, a, delta, E, V, threshold=1E-12):
+    F = [100, 5000]
+    d_y = [disp_bow(r, a, F[0], E, V), disp_bow(r, a, F[1], E, V)]
+    while (abs(d_y[-1][0]-delta) > threshold):
+        F.append(((F[-1]-F[-2])/(d_y[-1][0]-d_y[-2][0]))*(delta-d_y[-2][0])+F[-2])
+        d_y.append(disp_bow(r, a, F[-1], E, V))
+    return disp_bow(r, a, F[-1], E, V), pres_bow(r, a, F[-1]), F[-1]
+
 # Theoretical pressure distribution for punch problem
 def pressure(r, a, delta, E, V):
     G = E/(2*(1+V))
@@ -16,6 +40,7 @@ def pressure(r, a, delta, E, V):
         else:
             ans[i] = (2*G*delta)/(np.pi*(1-V)*np.sqrt(a**2-r[i]**2))
     return ans
+
 # Theoretical displacement for punch problem
 def disp_z(r, a, delta, E, V):
     G = E/(2*(1+V))
@@ -82,8 +107,8 @@ v = V_s                             # Poisson's Ratio                   # [N.a.]
 Lx = R                              # Length in X                       # [m]
 Ly = H                              # Length in Y                       # [m]
 #-Mesh------------------------------#-----------------------------------# [units]
-nx = 50                             # Number of X Elements              # [#]
-ny = 50                             # Number of Y Elements              # [#]
+nx = 150                             # Number of X Elements              # [#]
+ny = 150                             # Number of Y Elements              # [#]
 m = nx*ny                           # Total Number of Elements          # [#]
 Dx = Lx/nx                          # Size of the Element in X          # [m]
 Dy = Ly/ny                          # Size of the Element in Y          # [m]
@@ -118,61 +143,60 @@ g /= np.sqrt(3)                     #
 """
 MAIN
 """
-#-----------------------------------------------------------------------#
-# K Matrix Assembly                                                     #
-#-----------------------------------------------------------------------#
-# If broken switch order of loops
-for ey in range(ny):
-    for ex in range(nx):
-        i = ey*(nx+1)+ex        # Index of bottom left node
-        j = i+(nx+1)            # Index of top left node
-        x1 = xn[ey,ex]; x2 = xn[ey,ex+1]; x3 = x1; x4 = x2
-        y1 = yn[ey,ex]; y2 = y1; y3 = yn[ey+1,ex]; y4 = y3
-        Kq = np.zeros((8,8))
-        # Integral aproximation using Gauss points
-        for gg in range(4):     # gg == gauss point index
-            xx = g[gg,0]        # Gauss point for X
-            yy = g[gg,1]        # Gauss point for Y
-            Nxx = np.array([-0.25*(1-yy), 0.25*(1-yy), -0.25*(1+yy), 0.25*(1+yy)])
-            Nyy = np.array([-0.25*(1-xx), -0.25*(1+xx), 0.25*(1-xx), 0.25*(1+xx)])
-            J = np.array([ # Jacobian Matrix
-                [Nxx@[x1,x2,x3,x4], Nxx@[y1,y2,y3,y4]],
-                [Nyy@[x1,x2,x3,x4], Nyy@[y1,y2,y3,y4]]])
-            dJ = np.linalg.det(J)
-            iJ = np.linalg.inv(J)
-            A = np.zeros((4,4)); A[0:2, 0:2] = iJ; A[2:4, 2:4] = iJ
-            A = T@A
-            G = np.array([ # G Matrix
-                [Nxx[0], 0,  Nxx[1], 0,  Nxx[2], 0,  Nxx[3], 0],
-                [Nyy[0], 0,  Nyy[1], 0,  Nyy[2], 0,  Nyy[3], 0],
-                [0,  Nxx[0], 0,  Nxx[1], 0,  Nxx[2], 0,  Nxx[3]],
-                [0,  Nyy[0], 0,  Nyy[1], 0,  Nyy[2], 0,  Nyy[3]]])
-            B = A@G # B Matrix
-            Kq += dJ*B.T@(Em@B) # ELement Stiffness Matrix
-        # EDOFS - DOF indicies for elemnt q
-        edofs = np.array([2*i,2*i+1,2*(i+1),2*(i+1)+1,2*j,2*j+1,2*(j+1),2*(j+1)+1])
-        K[edofs.reshape(-1, 1), edofs.reshape(1, -1)] += Kq
-#-----------------------------------------------------------------------#
-# Boundary Conditions                                                   #
-#-----------------------------------------------------------------------#
-u = np.nan*np.ones(2*N)
-for i in range(N):
-    i_x = 2*i
-    i_y = 2*i+1
-    row = int(np.floor(i/(nx+1)))
-    col = i%(ny+1)
-    # Fixed Bottom Row
-    if (row == 0/Dy):
-        u[i_x] = 0
-        u[i_y] = 0
-    # Symmetry
-    elif (col == 0/Dy) and not (row == H/Dy):
-        u[i_x] = 0
-    # Perscribed Displacements for Punch
-    elif (row == H/Dy) and (col <= a/Dx):
-        u[i_x] = 0
-        u[i_y] = delta
-#-----------------------------------------------------------------------#
+#-----------------------------------------------------------------------------------#-----------------------------------------------------#
+# K Matrix Assembly                                                                 #
+#-----------------------------------------------------------------------------------#-----------------------------------------------------#
+for ey in range(ny):                                                                # 1) LOOP THROUGH ROWS
+    for ex in range(nx):                                                            #       2) LOOP THROUGH COLUMNS
+        i = ey*(nx+1)+ex                                                            # Index of bottom left node
+        j = i+(nx+1)                                                                # Index of top left node
+        x1 = xn[ey,ex]; x2 = xn[ey,ex+1]; x3 = x1; x4 = x2                          # Calculation of all X coordinates of elements nodes
+        y1 = yn[ey,ex]; y2 = y1; y3 = yn[ey+1,ex]; y4 = y3                          # Calculation of all y coordinates of elements nodes
+        Kq = np.zeros((8,8))                                                        # Initialization for stiffness element Kq
+        #-Integral aproximation using Gauss points----------------------------------#-----------------------------------------------------#
+        for gg in range(4):                                                         # gg == gauss point index
+            xx = g[gg,0]                                                            # Gauss point for X
+            yy = g[gg,1]                                                            # Gauss point for Y
+            Nxx = np.array([-0.25*(1-yy), 0.25*(1-yy), -0.25*(1+yy), 0.25*(1+yy)])  # Shape function 
+            Nyy = np.array([-0.25*(1-xx), -0.25*(1+xx), 0.25*(1-xx), 0.25*(1+xx)])  # Shape function
+            J = np.array([                                                          # Jacobian Matrix
+                [Nxx@[x1,x2,x3,x4], Nxx@[y1,y2,y3,y4]],                             # |
+                [Nyy@[x1,x2,x3,x4], Nyy@[y1,y2,y3,y4]]])                            # |
+            dJ = np.linalg.det(J)                                                   # Determinate of Jacobian
+            iJ = np.linalg.inv(J)                                                   # Inverse of Jacobian
+            A = np.zeros((4,4)); A[0:2, 0:2] = iJ; A[2:4, 2:4] = iJ                 # A matrix initialization
+            A = T@A                                                                 # A matrix calculation
+            G = np.array([                                                          # G matrix assignment
+                [Nxx[0], 0,  Nxx[1], 0,  Nxx[2], 0,  Nxx[3], 0],                    # |
+                [Nyy[0], 0,  Nyy[1], 0,  Nyy[2], 0,  Nyy[3], 0],                    # |
+                [0,  Nxx[0], 0,  Nxx[1], 0,  Nxx[2], 0,  Nxx[3]],                   # |
+                [0,  Nyy[0], 0,  Nyy[1], 0,  Nyy[2], 0,  Nyy[3]]])                  # |
+            B = A@G                                                                 # B matrix
+            Kq += dJ*B.T@(Em@B)                                                     # ELement stiffness matrix
+        #-Stiffness matrix assignment-----------------------------------------------#-----------------------------------------------------#
+        edofs = np.array([2*i,2*i+1,2*(i+1),2*(i+1)+1,2*j,2*j+1,2*(j+1),2*(j+1)+1]) # Calculating EDOF's (DOF indicies for elemnt q)
+        K[edofs.reshape(-1, 1), edofs.reshape(1, -1)] += Kq                         # Assigning calulated Kq to its place in the overall K matrix
+#-----------------------------------------------------------------------#-----------#-----------------------------------------------------#
+# Boundary Conditions                                                   #           
+#-----------------------------------------------------------------------#-----------------------------------------------------#
+u = np.nan*np.ones(2*N)                                                 # Initializing U to nan for safe allocation
+for i in range(N):                                                      # Loop through U
+    i_x = 2*i                                                           # X component index
+    i_y = 2*i+1                                                         # Y component index
+    row = int(np.floor(i/(nx+1)))                                       # Row number
+    col = i%(ny+1)                                                      # Column number
+    #-Fixed Bottom Row--------------------------------------------------#-----------------------------------------------------#
+    if (row == 0/Dy):                                                   # Condition for bottom row
+        u[i_x] = 0                                                      # X displacement fixed
+        u[i_y] = 0                                                      # Y displacement fixed
+    #-Symmetry----------------------------------------------------------#-----------------------------------------------------#
+    elif (col == 0/Dy) and not (row == H/Dy):                           # Condition for center axis or left column
+        u[i_x] = 0                                                      # X displacement fixed
+    #-Perscribed Displacements for Punch with No Slip-------------------#-----------------------------------------------------#
+    elif (row == H/Dy) and (col <= a/Dx):                               # Condition for punch contact
+        u[i_x] = 0                                                      # X displacement fixed
+        u[i_y] = delta                                                  # Perscribed Y displacement
+#-----------------------------------------------------------------------#-----------------------------------------------------#
 # Loads                                                                 #
 #-----------------------------------------------------------------------#
 f = np.zeros(2*N)
@@ -203,15 +227,21 @@ u[free_dofs] = np.linalg.solve(K_11, (f_1-K_12@u_2))
 # Python Displacements
 dx = u[0::2]
 dy = u[1::2]
+np.savetxt("dx.csv", dx, delimiter=",")
+np.savetxt("dy.csv", dx, delimiter=",")
+
 # Abaqus Data
+# Refined Mesh
+#x_a = np.loadtxt('./Abaqus_Validation/Abaqus_X_Data_Refined.csv', delimiter=',', encoding="utf-8-sig")
+#dy_a = np.loadtxt('./Abaqus_Validation/Abaqus_Displacement_Data_Refined.csv', delimiter=',', encoding="utf-8-sig")
+#sy_a = np.loadtxt('./Abaqus_Validation/Abaqus_Stress_Data_Refined.csv', delimiter=',', encoding="utf-8-sig")
+# 150x150 Mesh
 x_a = np.loadtxt('./Abaqus_Validation/Abaqus_X_Data.csv', delimiter=',')
 dy_a = np.loadtxt('./Abaqus_Validation/Abaqus_Displacement_Data.csv', delimiter=',')
 sy_a = np.loadtxt('./Abaqus_Validation/Abaqus_Stress_Data.csv', delimiter=',')
-dy_a_s = np.loadtxt('./Abaqus_Validation/Abaqus_Displacement_Slip_Data.csv', delimiter=',')
-sy_a_s = np.loadtxt('./Abaqus_Validation/Abaqus_Stress_Slip_Data.csv', delimiter=',')
 # Theoretical Displacements
-dy_t = disp_z(x, a, delta, E, v)
-# Node position vectors
+dy_t, sy_t, F0 = valid_bow(x, a, delta, E, v)
+# Undeformed node position vector
 x_vec = np.zeros_like(u)
 for i in range(N):
     i_x = 2*i
@@ -220,24 +250,29 @@ for i in range(N):
     col = i%(ny+1)
     x_vec[i_x] = col*Dx
     x_vec[i_y] = row*Dy
-x_x = x_vec[0::2]
-x_y = x_vec[1::2]
+# Undeformed node position vectors (X and Y)
+x_vec_x = x_vec[0::2]
+x_vec_y = x_vec[1::2]
 # Displacement plotting
-plt.plot([], [], ' ', label='Scale Factor: %.2E' %(scale))
-plt.plot(x_x[-(nx+1):], x_y[-(ny+1):]+dy_t*scale, color='r', alpha=0.5, label='Theoretical deformation')
-plt.plot(x_a, x_y[-(ny+1)]+dy_a*scale, color='b', alpha=0.5, label='Abaqus deformation')
-plt.scatter(x_x, x_y, s=nms, label='Undeformed')
-plt.scatter(x_x+dx*scale, x_y+dy*scale, s=nms, label='Deformed Python')
+x_vec_t = [x_vec_x[-(nx+1):], x_vec_y[-(ny+1):]+dy_t]
+x_vec_a = [x_a, x_vec_y[-(ny+1)]+dy_a]
+x_vec_u = [x_vec_x, x_vec_y]
+x_vec_d = [x_vec_x+dx, x_vec_y+dy]
+cmap = get_cmap(6)
+plt.plot(x_vec_u[0][-(nx+1):], x_vec_u[1][-(ny+1):], marker='.', alpha=0.8, color=cmap(3), label='Undeformed')
+plt.plot(x_vec_d[0][-(nx+1):], x_vec_d[1][-(ny+1):], marker='.', alpha=0.8, color=cmap(4), label='Deformed Python')
+plt.plot(x_vec_t[0], x_vec_t[1], alpha=0.8, color=cmap(1), label='Theoretical deformation')
+plt.plot(x_vec_a[0], x_vec_a[1], alpha=0.8, color=cmap(2), label='Abaqus deformation')
 plt.xlabel('Radial Position [m]')
 plt.ylabel('Axial Position [m]')
 plt.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
-plt.axis('scaled')
 plt.savefig('%s/Displacements_Plot' %(img_path), bbox_inches='tight')
 plt.show()
 plt.close()
 #-----------------------------------------------------------------------#
 # Plotting Stress                                                       #
 #-----------------------------------------------------------------------#
+# Initialization
 strain = np.nan*np.ones((nx,ny,3))
 stress = np.nan*np.ones_like((strain))
 stress_vm = np.nan*np.ones((nx,ny))
@@ -245,6 +280,7 @@ Uv = np.nan*np.ones((nx,ny))
 ex_vec = np.nan*np.ones((nx,ny,2))
 deformations = np.nan*np.ones((nx,ny,3))
 ex_vec_def = np.nan*np.ones((nx,ny,2))
+# Computing values
 for ey in range(ny):
     for ex in range(nx):
         i = ey*(nx+1)+ex        # Index of bottom left node
@@ -275,9 +311,12 @@ for ey in range(ny):
         stress_vm[ex,ey] = np.sqrt(stress[ex,ey,0]**2+stress[ex,ey,1]**2-(stress[ex,ey,0]*stress[ex,ey,1])+3*stress[ex,ey,2]**2)
         #Strain Energy Values
         Uv[ex,ey] = 0.5*strain[ex,ey,:]@stress[ex,ey,:]
-plt.plot(ex_vec[:,-1,0], stress[:,-1,1], label='Y-Y Stress Python')
-plt.plot(ex_vec[:,-1,0], pressure(ex_vec[:,-1,0], a, delta, E, v), label='Y-Y Pressure Theory')
-plt.plot(x_a, sy_a, color='b', alpha=0.5, label='Y-Y Stress Abaqus')
+# Plot top surface stress validation
+ex_vec_ref = np.linspace(min(ex_vec[:,-1,0]), max(ex_vec[:,-1,0]), 256)
+cmap = get_cmap(4)
+plt.plot(ex_vec[:,-1,0], stress[:,-1,1], marker='.', alpha=0.8, color=cmap(0), label='Y-Y Stress Python')
+plt.plot(ex_vec_ref, pres_bow(ex_vec_ref, a, F0), alpha=0.8, color=cmap(1), label='Y-Y Pressure Theory')
+plt.plot(x_a, sy_a, alpha=0.8, color=cmap(2), label='Y-Y Stress Abaqus')
 plt.xlabel('Radial Position [m]')
 plt.ylabel('Stress Magnitude [Pa]')
 plt.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
@@ -319,29 +358,40 @@ color_map(ex_vec[:,-1,0], ex_vec[-1,:,1], stress_vm, 'Von Mises Stress [Pa]', [[
 #-----------------------------------------------------------------------#
 # Validation Error Output                                               #
 #-----------------------------------------------------------------------#
-# Model Displacement Comparison
-error = np.nan*np.ones_like(dy_t)
-error_a = np.nan*np.ones_like(dy_t)
-idx_start = int(H/Dy)*(nx+1)
-for i in range(len(error)):
-    idx_y = i+idx_start
-    error[i] = abs((dy[idx_y] - dy_t[i])/dy_t[i]*100)
-    dy_a_current = dy_a[find_nearest(x_a, x_x[-(nx+1):][i])]
-    error_a[i] = abs((dy[idx_y] - dy_a_current)/dy_a_current*100)
+# Displacement validation
+x_pos = x_vec_x[-(nx+1):]
+disp_Y = dy[int(H/Dy)*(nx+1):]
+np.savetxt("disp_Y.csv", disp_Y, delimiter=",")
+np.savetxt("x_node.csv", x_pos, delimiter=",")
+disp_Y_t = disp_bow(x_pos, a, F0, E, v, d2=3.4E-6)
+error = np.nan*np.ones_like(disp_Y)
+error_a = np.nan*np.ones_like(error)
+for i in range(len(disp_Y)):
+    if (x_pos[i] > a) and (x_pos[i] < 0.85*R):
+        error[i] = abs((disp_Y_t[i] - disp_Y[i])/disp_Y_t[i]*100)
+        disp_Y_a = dy_a[find_nearest(x_a, x_pos[i])]
+        error_a[i] = abs((disp_Y_a - disp_Y[i])/disp_Y_a*100)
+error = np.array([x for x in error if np.isnan(x)!=np.isnan(np.nan)])
+error_a = np.array([x for x in error_a if np.isnan(x)!=np.isnan(np.nan)])
 print('DISPLACEMENTS:')
-print('Theoretical Error:', max(error))
-print('Abaqus Error:', max(error_a))
-# Stress Error
+print('Theoretical Error:', max(error), np.mean(error))
+print('Abaqus Error:', max(error_a), np.mean(error_a)) 
+
+# Stress validation
 x_pos = ex_vec[:,-1,0]
 stress_YY = stress[:,-1,1]
-stress_YY_t = pressure(x_pos, a, delta, E, v)
+np.savetxt("stress_YY.csv", stress_YY, delimiter=",")
+np.savetxt("x_elem.csv", x_pos, delimiter=",")
+stress_YY_t = pres_bow(x_pos, a, F0)
 error = np.nan*np.ones_like(stress_YY)
 error_a = np.nan*np.ones_like(error)
 for i in range(len(stress_YY)):
-    if (x_pos[i] <= a):
+    if (x_pos[i] < a):
         error[i] = abs((stress_YY_t[i] - stress_YY[i])/stress_YY_t[i]*100)
-        sy_a_current = sy_a_s[find_nearest(x_a, x_pos[i])]
+        sy_a_current = sy_a[find_nearest(x_a, x_pos[i])]
         error_a[i] = abs((sy_a_current - stress_YY[i])/sy_a_current*100)
+error = np.array([x for x in error if np.isnan(x)!=np.isnan(np.nan)])
+error_a = np.array([x for x in error_a if np.isnan(x)!=np.isnan(np.nan)])
 print('STRESS:')
-print('Theoretical Error:', max(error))
-print('Abaqus Error:', max(error_a))    
+print('Theoretical Error:', max(error), np.mean(error))
+print('Abaqus Error:', max(error_a), np.mean(error_a))    
