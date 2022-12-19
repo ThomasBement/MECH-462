@@ -366,17 +366,30 @@ np.savetxt("x_node.csv", x_pos, delimiter=",")
 disp_Y_t = disp_bow(x_pos, a, F0, E, v, d2=3.4E-6)
 error = np.nan*np.ones_like(disp_Y)
 error_a = np.nan*np.ones_like(error)
+x_pos_plt = np.nan*np.ones_like(x_pos)
 for i in range(len(disp_Y)):
     if (x_pos[i] > a) and (x_pos[i] < 0.85*R):
         error[i] = abs((disp_Y_t[i] - disp_Y[i])/disp_Y_t[i]*100)
         disp_Y_a = dy_a[find_nearest(x_a, x_pos[i])]
         error_a[i] = abs((disp_Y_a - disp_Y[i])/disp_Y_a*100)
+        x_pos_plt[i] = x_pos[i]
 error = np.array([x for x in error if np.isnan(x)!=np.isnan(np.nan)])
 error_a = np.array([x for x in error_a if np.isnan(x)!=np.isnan(np.nan)])
+x_pos_plt = np.array([x for x in x_pos_plt if np.isnan(x)!=np.isnan(np.nan)])
+# Plot stress errors
+plt.plot(x_pos_plt, error, label='Theory')
+plt.plot(x_pos_plt, error_a, label='Abaqus')
+plt.xlabel('Radial Position [m]')
+plt.ylabel('Y Displacement Error [%]')
+plt.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
+plt.savefig('%s/Displacement_Error_Plot' %(img_path), bbox_inches='tight')
+plt.show()
+# Print max error outputs 
+"""
 print('DISPLACEMENTS:')
 print('Theoretical Error:', max(error), np.mean(error))
 print('Abaqus Error:', max(error_a), np.mean(error_a)) 
-
+"""
 # Stress validation
 x_pos = ex_vec[:,-1,0]
 stress_YY = stress[:,-1,1]
@@ -385,13 +398,27 @@ np.savetxt("x_elem.csv", x_pos, delimiter=",")
 stress_YY_t = pres_bow(x_pos, a, F0)
 error = np.nan*np.ones_like(stress_YY)
 error_a = np.nan*np.ones_like(error)
+x_pos_plt = np.nan*np.ones_like(x_pos)
 for i in range(len(stress_YY)):
     if (x_pos[i] < a):
         error[i] = abs((stress_YY_t[i] - stress_YY[i])/stress_YY_t[i]*100)
         sy_a_current = sy_a[find_nearest(x_a, x_pos[i])]
         error_a[i] = abs((sy_a_current - stress_YY[i])/sy_a_current*100)
+        x_pos_plt[i] = x_pos[i]
 error = np.array([x for x in error if np.isnan(x)!=np.isnan(np.nan)])
 error_a = np.array([x for x in error_a if np.isnan(x)!=np.isnan(np.nan)])
+x_pos_plt = np.array([x for x in x_pos_plt if np.isnan(x)!=np.isnan(np.nan)])
+# Plot stress errors
+plt.plot(x_pos_plt, error, label='Theory')
+plt.plot(x_pos_plt, error_a, label='Abaqus')
+plt.xlabel('Radial Position [m]')
+plt.ylabel('Y-Y Stress Error [%]')
+plt.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
+plt.savefig('%s/Stress_Error_Plot' %(img_path), bbox_inches='tight')
+plt.show()
+# Print max error outputs
+"""
 print('STRESS:')
 print('Theoretical Error:', max(error), np.mean(error))
 print('Abaqus Error:', max(error_a), np.mean(error_a))    
+"""
